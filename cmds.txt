@@ -1,0 +1,60 @@
+sudo apt-get update
+sudo nano /etc/apt/sources.list
+sudo apt-get update
+uname -r
+sudo apt-get install build-essential
+sudo apt-get install dawrfdump
+sudo apt-get install linux-headers-$(uname -r)
+sudo apt-get install git
+sudo apt-get install zip
+gcc --version
+cd ¬
+pwd
+sudo git clone https://github.com/504ensicsLabs/LiME.git
+ls -l
+cd LiME/src
+sudo make
+ls -l *.ko
+sudo insmod ./lime-3.13.0-170-generic.ko "path=/home/vagrant/ubuntudump.lime format=lime"
+cd ¬
+ls -l
+cd ¬
+sudo git clone https://github.com/volatilityfoundation/volatility.git
+cd volatility/tools/Linux
+sudo chown -R vagrant: /home/vagrant/volatility
+make
+ls -l
+sudo zip $(lsb_release -i -s)_$(uname -r)_profile.zip ./module.dwarf /boot/System.map-$(uname 
+r)
+ls -l
+cp Ubuntu_3.13.0-170-generic_profile.zip /home/vagrant
+cd ¬
+ls -l
+md5sum ubuntudump.lime
+md5sum Ubuntu_3.13.0-170-generic_profile.zip
+sudo shutdown -h now
+sudo mount -t iso9660 /dev/sr0 /media/cdrom
+cd /media/cdrom
+ls -l
+sudo sh ./VBoxLinuxAdditions.run
+cd /media/testshare
+sudo nano /etc/group
+exit
+cd /home/vagrant
+cp Ubuntu_3.13.0-170-generic_profile.zip /media/testShare
+cp ubuntudump.lime /media/testShare
+ls -l /media/testShare
+ls -l /home/vagrant
+on kali - cd /media/testshare/
+pwd
+ls -l
+md5sum both
+volatility --info | grep Linux
+cp ubuntu.zip /home/kali/Volatility/Volatility?plugins/overlays/Linux
+cd /home/kali/volatility/plugins/overlays/Linux
+ls -l Ubuntu.zip
+chmod 77 Ubuntu.zip
+cd /media/testshare
+volatility --info | grep Linux
+volatility -f ubuntudump.lime --profile=LinuxUbuntu_3_13_0-170-generic_profilex64 linux_pslist
+
