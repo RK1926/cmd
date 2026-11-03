@@ -1,0 +1,97 @@
+PART 1: PROCESSES
+volatility -f $C --profile=$P linux_pslist > ~/out/c_pslist.txt
+volatility -f $I --profile=$P linux_pslist > ~/out/i_pslist.txt
+volatility -f $C --profile=$P linux_pstree > ~/out/c_pstree.txt
+volatility -f $I --profile=$P linux_pstree > ~/out/i_pstree.txt
+volatility -f $C --profile=$P linux_psaux > ~/out/c_psaux.txt
+volatility -f $I --profile=$P linux_psaux > ~/out/i_psaux.txt
+volatility -f $C --profile=$P linux_psenv > ~/out/c_psenv.txt
+volatility -f $I --profile=$P linux_psenv > ~/out/i_psenv.txt
+volatility -f $C --profile=$P linux_lsof > ~/out/c_lsof.txt
+volatility -f $I --profile=$P linux_lsof > ~/out/i_lsof.txt
+volatility -f $C --profile=$P linux_bash > ~/out/c_bash.txt
+volatility -f $I --profile=$P linux_bash > ~/out/i_bash.txt
+
+Step 1.
+ What programs are running? (linux_pslist)
+diff <(awk 'NR>2{print $2}' c_pslist.txt | sort -u) <(awk 'NR>2{print $2}' i_pslist.txt | sort -u)
+
+Step 2.
+ Who started whom? (linux_pstree)
+diff -u c_pstree.txt i_pstree.txt
+
+Step 3.
+(i) What exactly did they run? (linux_psaux)
+diff <(awk 'NR>1{print}' c_psaux.txt | sort) \
+     <(awk 'NR>1{print}' i_psaux.txt | sort)
+
+Step 4. 
+Did anyone become root?
+grep -E "sudo|bash|wget|sleep" i_pslist.txt
+
+Step 5.
+ Prove where root came from (linux_psenv)
+volatility -f "$I" --profile="$P" linux_psenv -p [PID] ==> ex 596
+
+Step 6.
+ What files does it have open? (linux_lsof)
+(i)volatility -f $I --profile=$P linux_lsof -p [PID]
+or
+(ii)grep -w '596' i_lsof.txt ==> easier but must be in directory where txt files are
+
+
+Step 7.
+What did the users type? (linux_bash)
+cat i_bash.txt
+
+Step 8. Recover a script
+get the address from psaux by matching pid from other ps_
+
+then run :
+volatility -f $I --profile=$P linux_find_file -i 0xffff977619987828 -O out/mirror_sync.sh
+
+or
+
+Enumerate files
+volatility -f "$I" --profile="$P" linux_enumerate_files > ~/out/i_files.txt
+
+Search for your script
+grep -F "mirror_sync.sh" ~/out/i_files.txt
+
+Extract the script
+volatility -f "$I" --profile="$P" linux_find_file -i 0xffff977619987828 -O ~/out/mirror_sync.sh
+
+Display the script's contents
+cat ~/out/mirror_sync.sh
+
+
+
+
+
+
+
+Hunting for suspicious things (Processes)
+
+-Download or network tools	
+grep -E "wget|curl|nc |ncat|netcat|ssh" i_psaux.txt
+
+-Scripting and encoding
+grep -E "python|perl|base64|chmod" i_psaux.txt
+
+-Programs in temp folders
+grep -E "/tmp|/dev/shm|/var/tmp" i_psaux.txt
+
+-Normal users’ processes	
+awk 'NR>2 && $5>=1000' i_pslist.txt
+
+-Library injection
+grep -E "LD_PRELOAD|LD_LIBRARY_PATH" i_psenv.txt
+
+-Open files in temp or deleted
+grep -E "/tmp|/dev/shm|deleted" i_lsof.txt
+
+-Risky typed commands
+grep -E "sudo|su |useradd|adduser|passwd|crontab|wget|curl|insmod" i_bash.txt
+
+-Hidden processes
+volatility -f $I --profile=$P linux_psxview

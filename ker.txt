@@ -1,0 +1,54 @@
+PART 3: KERNEL
+
+volatility -f $C --profile=$P linux_lsmod > ~/out/c_lsmod.txt
+volatility -f $I --profile=$P linux_lsmod > ~/out/i_lsmod.txt
+volatility -f $C --profile=$P linux_dmesg > ~/out/c_dmesg.txt
+volatility -f $I --profile=$P linux_dmesg > ~/out/i_dmesg.txt
+volatility -f $C --profile=$P linux_check_modules > ~/out/c_checkmod.txt
+volatility -f $I --profile=$P linux_check_modules > ~/out/i_checkmod.txt
+volatility -f $C --profile=$P linux_hidden_modules > ~/out/c_hidden.txt
+volatility -f $I --profile=$P linux_hidden_modules > ~/out/i_hidden.txt
+
+
+
+Step 1. 
+Loaded modules (linux_lsmod)
+diff <(awk '{print $2,$3}' c_lsmod.txt | sort) <(awk '{print $2,$3}' i_lsmod.txt | sort)
+
+Step 2. 
+Kernel messages (linux_dmesg)
+diff <(sed 's/^\[[^]]*\] //' c_dmesg.txt) <(sed 's/^\[[^]]*\] //' i_dmesg.txt)
+grep -iE "taint|verification|module|vbox|lime" i_dmesg.txt
+
+Step 3. Hidden modules (linux_check_modules and linux_hidden_modules)
+cat i_checkmod.txt
+cat i_hidden.txt
+
+Step 4. Dump a module to compare (linux_moddump)
+mkdir -p ~/out/c_mods ~/out/i_mods
+volatility -f $C --profile=$P linux_moddump -D ~/out/c_mods -r e1000
+volatility -f $I --profile=$P linux_moddump -D ~/out/i_mods -r e1000
+ls -l ~/out/c_mods ~/out/i_mods
+md5sum ~/out/c_mods/* ~/out/i_mods/*
+
+
+
+
+Hunting for suspicious things (Kernel)
+Unsigned modules	grep -iE "taint|verification" i_dmesg.txt
+
+Tampered system calls	volatility -f $I --profile=$P linux_check_syscall
+
+Tampered interrupts	volatility -f $I --profile=$P linux_idt
+
+Keyloggers	volatility -f $I --profile=$P linux_keyboard_notifiers
+
+Terminal hooks	volatility -f $I --profile=$P linux_check_tty
+
+Network hiding	volatility -f $I --profile=$P linux_check_afinfo
+
+File hiding	volatility -f $I --profile=$P linux_check_fop
+
+Kernel code patches	volatility -f $I --profile=$P linux_check_inline_kernel
+
+Shared credentials	volatility -f $I --profile=$P linux_check_creds

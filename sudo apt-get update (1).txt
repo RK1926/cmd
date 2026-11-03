@@ -1,0 +1,180 @@
+sudo apt-get update
+sudo nano /etc/apt/sources.list
+sudo apt-get update
+uname -r
+sudo apt-get install build-essential
+sudo apt-get install dwarfdump
+sudo apt-get install linux-headers-$(uname -r)
+sudo apt-get install git
+sudo apt-get install zip
+gcc --version
+cd ¬
+pwd
+sudo git clone https://github.com/504ensicsLabs/LiME.git
+ls -l
+cd LiME/src
+sudo make
+ls -l *.ko
+sudo insmod ./lime-3.13.0-170-generic.ko "path=/home/vagrant/ubuntudump.lime format=lime"
+cd ¬
+ls -l
+cd ¬
+sudo git clone https://github.com/volatilityfoundation/volatility.git
+cd volatility/tools/Linux
+sudo chown -R vagrant: /home/vagrant/volatility
+make
+ls -l
+sudo zip $(lsb_release -i -s)_$(uname -r)_profile.zip ./module.dwarf /boot/System.map-$(uname 
+-r)
+ls -l
+cp Ubuntu_3.13.0-170-generic_profile.zip /home/vagrant
+cd ¬
+ls -l
+md5sum ubuntudump.lime
+md5sum Ubuntu_3.13.0-170-generic_profile.zip
+sudo shutdown -h now
+sudo mount -t iso9660 /dev/sr0 /media/cdrom
+cd /media/cdrom
+ls -l
+sudo sh ./VBoxLinuxAdditions.run
+cd /media/testshare
+sudo nano /etc/group
+exit
+cd /home/vagrant
+cp Ubuntu_3.13.0-170-generic_profile.zip /media/testShare
+cp ubuntudump.lime /media/testShare
+ls -l /media/testShare
+ls -l /home/vagrant
+
+
+on kali -
+ cd /media/testshare/
+pwd
+ls -l
+md5sum both
+sudo apt install volatility
+volatility --info | grep Linux
+cp ubuntu.zip /home/kali/volatility/volatility/plugins/overlays/Linux
+cd /home/kali/volatility/plugins/overlays/Linux
+
+ls -l Ubuntu.zip
+chmod 77 Ubuntu.zip
+cd /media/testshare
+volatility --info | grep Linux
+volatility -f ubuntudump.lime --profile=LinuxUbuntu_3_13_0-170-generic_profilex64 linux_pslist
+
+
+
+
+
+
+Processes:
+
+make sure test_share folder has the zip, clean and infected
+volatility --info | grep Linux
+P=LinuxDebian_4_19_0-18-amd64_profilex64
+C=debiandump.lime
+I=labtest_mock_infected.lime
+mkdir -p ~/out
+
+
+cd /media/testshare
+volatility -f $C --profile=$P linux_pstree | tee ~/out/c_pstree.txt
+volatility -f $I --profile=$P linux_pstree | tee ~/out/i_pstree.txt
+volatility -f $C --profile=$P linux_psaux | tee ~/out/c_psaux.txt
+volatility -f $I --profile=$P linux_psaux | tee ~/out/i_psaux.txt
+
+grep -E "sudo|bash|\.sh" ~/out/i_psaux.txt
+volatility -f $I --profile=$P linux_psenv -p 596 | tee ~/out/i_psenv_596.txt
+volatility -f $I --profile=$P linux_lsof -p 596 | tee ~/out/i_lsof_596.txt
+
+
+cd ~/out
+cat i_psaux.txt
+grep -E "sudo|wget|sleep|mirror" c_pstree.txt c_psaux.txt
+grep -A15 "login" i_pstree.txt
+grep -E "sudo|mirror|wget|sleep" i_psaux.txt
+cat i_psenv_596.txt | tr ' ' '\n' | grep -E "SUDO|^USER=|LOGNAME|HOME|PWD"
+grep 255 i_lsof_596.txt
+grep -E "sudo|id|pwd|ls|mirror" i_bash.txt
+
+
+
+Networking:
+
+cd /media/testshare
+volatility -f $C --profile=$P linux_netstat | tee ~/out/c_netstat.txt
+volatility -f $I --profile=$P linux_netstat | tee ~/out/i_netstat.txt
+volatility -f $C --profile=$P linux_ifconfig | tee ~/out/c_ifconfig.txt
+volatility -f $I --profile=$P linux_ifconfig | tee ~/out/i_ifconfig.txt
+volatility -f $C --profile=$P linux_arp | tee ~/out/c_arp.txt
+volatility -f $I --profile=$P linux_arp | tee ~/out/i_arp.txt
+volatility -f $I --profile=$P linux_list_raw | tee ~/out/i_raw.txt
+
+cd ~/out
+grep -E "TCP|UDP" c_netstat.txt
+grep -E "TCP|UDP" i_netstat.txt
+grep -E "LISTEN|ESTABLISHED" i_netstat.txt
+diff c_ifconfig.txt i_ifconfig.txt
+diff c_arp.txt i_arp.txt
+cat i_raw.txt
+
+
+
+Intrusion Detection:
+
+cd /media/testshare
+volatility -f $I --profile=$P linux_psxview | tee ~/out/i_psxview.txt
+volatility -f $I --profile=$P linux_check_creds | tee ~/out/i_creds.txt
+volatility -f $I --profile=$P linux_check_afinfo | tee ~/out/i_afinfo.txt
+volatility -f $I --profile=$P linux_check_tty | tee ~/out/i_tty.txt
+volatility -f $I --profile=$P linux_malfind | tee ~/out/i_malfind.txt
+
+cd ~/out
+grep False i_psxview.txt
+
+
+Kernel Modules:
+
+cd /media/testshare
+volatility -f $C --profile=$P linux_lsmod | tee ~/out/c_lsmod.txt
+volatility -f $I --profile=$P linux_lsmod | tee ~/out/i_lsmod.txt
+volatility -f $I --profile=$P linux_check_modules | tee ~/out/i_checkmod.txt
+volatility -f $I --profile=$P linux_check_syscall | tee ~/out/i_syscall.txt
+volatility -f $I --profile=$P linux_dmesg | tee ~/out/i_dmesg.txt
+
+cd ~/out
+diff c_lsmod.txt i_lsmod.txt
+cat i_checkmod.txt
+grep -i hooked i_syscall.txt
+grep -iE "lime|taint|module" i_dmesg.txt
+
+
+
+File System:
+
+cd /media/testshare
+volatility -f $C --profile=$P linux_mount | tee ~/out/c_mount.txt
+volatility -f $I --profile=$P linux_mount | tee ~/out/i_mount.txt
+volatility -f $C --profile=$P linux_enumerate_files > ~/out/c_files.txt
+volatility -f $I --profile=$P linux_enumerate_files > ~/out/i_files.txt
+
+grep mirror_sync ~/out/i_files.txt                ← copy the 0xffff... address
+volatility -f $I --profile=$P linux_find_file -i 0xADDRESS -O ~/out/mirror_sync.sh
+volatility -f $I --profile=$P linux_find_file -F /etc/passwd -O ~/out/i_passwd.txt
+volatility -f $C --profile=$P linux_find_file -F /etc/passwd -O ~/out/c_passwd.txt
+volatility -f $I --profile=$P linux_find_file -F /etc/hosts -O ~/out/i_hosts.txt
+
+cd ~/out
+diff c_mount.txt i_mount.txt
+wc -l c_files.txt i_files.txt
+grep -E "bash_history|records_session" i_files.txt
+cat mirror_sync.sh
+file mirror_sync.sh
+md5sum mirror_sync.sh
+diff c_passwd.txt i_passwd.txt
+cat i_hosts.txt
+
+
+
+

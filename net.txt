@@ -1,0 +1,45 @@
+PART 2: NETWORK
+
+
+volatility -f $C --profile=$P linux_netstat > ~/out/c_netstat.txt
+volatility -f $I --profile=$P linux_netstat > ~/out/i_netstat.txt
+volatility -f $C --profile=$P linux_ifconfig > ~/out/c_ifconfig.txt
+volatility -f $I --profile=$P linux_ifconfig > ~/out/i_ifconfig.txt
+volatility -f $C --profile=$P linux_arp > ~/out/c_arp.txt
+volatility -f $I --profile=$P linux_arp > ~/out/i_arp.txt
+volatility -f $C --profile=$P linux_list_raw > ~/out/c_raw.txt
+volatility -f $I --profile=$P linux_list_raw > ~/out/i_raw.txt
+
+Step 1.
+Connections (linux_netstat)
+diff <(grep -v UNIX c_netstat.txt) <(grep -v UNIX i_netstat.txt)
+
+Step 2. Network cards (linux_ifconfig)
+diff c_ifconfig.txt i_ifconfig.txt
+cat i_ifconfig.txt
+
+Step 3. Neighbours (linux_arp)
+diff c_arp.txt i_arp.txt
+
+Step 4. Raw sockets (linux_list_raw)
+
+
+Hunting for suspicious things (Network)
+New listening servers	
+grep LISTEN i_netstat.txt
+
+Active connections	
+grep ESTABLISHED i_netstat.txt
+
+Anything not local
+grep -vE "127\.0\.0\.1|0\.0\.0\.0|UNIX" i_netstat.txt
+
+
+Odd port numbers
+grep -E ":4444|:1337|:31337|:6666" i_netstat.txt
+
+Sniffing	
+grep -i promisc i_ifconfig.txt
+
+Odd raw sockets	
+cat i_raw.txt
